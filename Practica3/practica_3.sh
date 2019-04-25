@@ -2,7 +2,6 @@
 #Jorge Fernandez (721529) y Daniel Fraile (721525)
 
 #TODO: Revisar todos los status de salida (exit)
-#TODO: Eliminar mensajes de depuración
 
 #b) El usuario podrá emplear sudo sin password
 
@@ -25,15 +24,18 @@ anyadir_usuarios()
         then
             echo "Campo invalido"
             exit 1
-	    else
+        else
             #Comprobación de si existe o no el usuario
             if id -u "$identificador" 1>/dev/null 2>/dev/null
             then
                 echo "El usuario $identificador ya existe"
             else
+                useradd -d "/home/"$identificador"" -m -k /etc/skel -c "$nombrecompleto" -K UID_MIN=1815 -U "$identificador"
+                echo ""$identificador":"$contrasenya"" | chpasswd
+                passwd -x 30 "$identificador" 1> /dev/null
                 echo "$nombrecompleto ha sido creado"
             fi
-	    fi
+        fi
     done < "$1"
 }
 
@@ -44,11 +46,15 @@ borrar_usuarios()
     while IFS=, read -r identificador resto
     do
         if id -u "$identificador" 1>/dev/null 2>/dev/null
+        then
+            usermod -L "$identificador"
+            dir_home= $(cat /etc/passwd | grep "$identificador" | cut -d ':' -f 5 )
+            tar -cf /extra/backup/"$identificador".tar -C "$dir_home" .
+            if [ -r /extra/backup/"$dir_home" ]
             then
-                echo "DEPURACIÓN: El usuario $identificador existe, borrar usuario"
-            else
-                echo "DEPURACIÓN: El usuario $identificador no existe, continuar ejecucion con normalidad"
+                userdel "$identificador"
             fi
+        fi
     done < "$1"
 }
 
@@ -68,7 +74,6 @@ fi
 if [ "$1" = "-a" ]
 then
     anyadir_usuarios "$2"
-
 elif [ "$1" = "-s" ]
 then
     borrar_usuarios "$2"

@@ -1,3 +1,0 @@
-asdasfa,pass,nombre
-asddsdasdasfa,pass1,nombre2 ap2
-Daniel,pass,nombre dan
