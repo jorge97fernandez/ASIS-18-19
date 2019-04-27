@@ -1,20 +1,6 @@
 #!/bin/bash
 #Jorge Fernandez (721529) y Daniel Fraile (721525)
 
-#TODO: Revisar todos los status de salida (exit)
-
-#b) El usuario podrá emplear sudo sin password
-
-#f) La caducidad de la contraseña será de 30 días
-#j) Es necesario utilizar los comandos: useradd, userdel, usermod y chpasswd
-#k) Los usuarios deberán tener un UID mayor que 1815
-#l) Cada usuario tendrá como grupo por defecto uno con su mismo nombre
-#m) El directorio home de cada usuario se inicializará con los ficheros de /etc/skel
-
-#o) El borrado de usuarios será completo, incluyendo su directorio home
-#p) Antes de borrar un usuario el script realizará un backup de su directorio home (mediante tar y con nombre <usuario>.tar) que será guardado en /extra/backup
-#r) En caso de que el backup no pueda ser completado satisfactoriamente, no se realizará el borrado
-
 anyadir_usuarios()
 {
     while IFS=, read -r identificador contrasenya nombrecompleto
@@ -52,7 +38,7 @@ borrar_usuarios()
             tar -cf /extra/backup/"$identificador".tar -C "$dir_home" .
             if [ -r /extra/backup/"$dir_home" ]
             then
-                userdel "$identificador"
+                userdel -r "$identificador"
             fi
         fi
     done < "$1"
