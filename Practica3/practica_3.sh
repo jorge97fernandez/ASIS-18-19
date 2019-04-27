@@ -28,6 +28,7 @@ anyadir_usuarios()
 
 borrar_usuarios()
 {
+	mkdir -p /extra/backup
     #Solo es necesario distinguir el identificador
     while IFS=, read -r identificador resto
     do
