@@ -9,7 +9,7 @@ anyadir_usuarios()
         if [ -z "$identificador" ] || [ -z "$contrasenya" ] || [ -z "$nombrecompleto" ]
         then
             echo "Campo invalido"
-            exit 1
+            exit 2
         else
             #Comprobación de si existe o no el usuario
             if id -u "$identificador" 1>/dev/null 2>/dev/null
@@ -31,7 +31,11 @@ borrar_usuarios()
     #Solo es necesario distinguir el identificador
     while IFS=, read -r identificador resto
     do
-        if id -u "$identificador" 1>/dev/null 2>/dev/null
+		if [ -z "$identificador" ];then
+			echo "Campo invalido"
+			exit 2
+		fi
+        if [ ! -z 'id -u "$identificador"' ] 1>/dev/null 2>/dev/null
         then
             usermod -L "$identificador"
             dir_home= $(cat /etc/passwd | grep "$identificador" | cut -d ':' -f 5 )
