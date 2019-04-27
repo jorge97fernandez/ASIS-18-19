@@ -35,7 +35,8 @@ borrar_usuarios()
 			echo "Campo invalido"
 			exit 2
 		fi
-        if [ ! -z 'id -u "$identificador"' ] 1>/dev/null 2>/dev/null
+		existe='id -u "$identificador" 2> /dev/null'
+        if [ ! -z "$existe" ]
         then
             usermod -L "$identificador"
             dir_home= $(cat /etc/passwd | grep "$identificador" | cut -d ':' -f 5 )
