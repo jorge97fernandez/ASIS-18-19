@@ -1,0 +1,30 @@
+Autores: Jorge Fernandez (721529) y Daniel Fraile (721525)
+Practica 3 de Administración de Sistemas
+
+Al ejecutar el script practica_3.sh, la primera comprobación que se realiza
+es que el script esté siendo ejecutado con permisos de administración.
+
+Una vez se ha comprobado que se tienen permisos de administración, realizamos el mismo
+proceso para comprobar que tiene el número de parámetros correcto, y que ha sido ejecutado
+con una de las dos opciones disponibles: -a o -s.
+
+En caso de que cualquier comprobación anterior no sea satisfactoria, se muestra el error y se termina
+el script.
+
+Para la opción -a, correspondiente a la opción de añadir usuarios nuevos, se va leyendo línea a línea
+el fichero pasado al script como parámetro, para cada una de las líneas, primero se comprueba que existan
+todos los campos necesarios para añadir al usuario, y una vez esta comprobación sea satisfactoria, después se
+comprueba que el usuario que se pretende añadir, no existe ya en el sistema, y en ese caso se procede a su adición.
+Para ello, se hace uso del comando useradd, con opción -d para indicar cual será su directorio home, -m para que cree
+este home si no existe todavía, -k para indicarle el directorio que contiene los directorios y ficheros con los que inicializar
+el nuevo home, -K para definir que el UID de este nuevo usuario sea minimo 1815, -c para añadir una descripción del usuario,
+y -U para indicarle el nombre del grupo al que va a pertenecer el usuario . Para terminar, se establece la contraseña del nuevo usuario y
+se indica que la caducidad de esta va a ser de 30 dias.
+
+Para la opción -s, que corresponde a eliminar usuarios del sistema, lo primero que se realiza es la creación del directorio en el que se guardarán
+los backups de los usuarios que sean eliminados del sistema en caso de que tal directorio no exista, posteriormente se realiza la lectura línea a 
+línea de los parámetros, pero en este caso la comprobación de los datos se limita al primer campo de la línea, que es el único necesario, a 
+continuación se comprueba que el usuario que se quiere eliminar existe con el comando id -u, posteriormente una vez que esto ha sido 
+comprobado, bloqueamos la cuenta a eliminar con usermod -L, para evitar que nadie entre a la cuenta mientras se realiza el proceso de 
+borrado, y se intenta crear el archivo .tar. En caso de que la creación del backup sea exitosa, se procede a la eliminación del usuario 
+del sistema mediante userdel, con la opción -r para eliminar también su directorio home.
