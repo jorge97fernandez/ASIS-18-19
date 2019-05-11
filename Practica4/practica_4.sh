@@ -2,32 +2,38 @@
 #Jorge Fernandez (721529) y Daniel Fraile (721525)
 
 
-anyadir_usuarios()
+
+anyadir_usuario()
 {
-    while read ip
-    do
-        if -i ~/.ssh/id_as_ed25519 as@"$ip"
-        then
-            while IFS=, read -r identificador contrasenya nombrecompleto resto
-            do
                 #Comprobación de si alguno es cadena vacía
-                if [ -z "$identificador" ] || [ -z "$contrasenya" ] || [ -z "$nombrecompleto" ]
+                if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]
                 then
                     echo "Campo invalido"
                     exit 2
                 else
                     #Comprobación de si existe o no el usuario
-                    if ssh -i ~/.ssh/id_as_ed25519 as@"$ip" id -u "$identificador" 1>/dev/null 2>/dev/null
+                    if  ssh -n -i ~/.ssh/id_as_ed25519 user@"$4" id -u "$1" 1>/dev/null 2>/dev/null 
                     then
-                        echo "El usuario $identificador ya existe"
+                        echo "El usuario $1 ya existe"
                     else
-                        #Realizamos la creacion del usuario, le asignamos la contraseña y le asignamos una validez de 30 dias
-                        ssh -i ~/.ssh/id_as_ed25519 as@"$ip" useradd -d "/home/"$identificador"" -m -k /etc/skel -c "$nombrecompleto" -K UID_MIN=1815 -U "$identificador"
-                        echo ""$identificador":"$contrasenya"" | ssh -i ~/.ssh/id_as_ed25519 as@"$ip" chpasswd
-                        ssh -i ~/.ssh/id_as_ed25519 as@"$ip" passwd -x 30 "$identificador" 1> /dev/null
-                        echo "$nombrecompleto ha sido creado"
+			ssh -n -i ~/.ssh/id_as_ed25519 user@$4 sudo useradd -d "/home/"$1"" -m -k /etc/skel -K UID_MIN=1815 -U "$1"
+			echo ""$1":"$2"" | ssh -n -i ~/.ssh/id_as_ed25519 user@$4 sudo chpasswd
+                	ssh -n -i ~/.ssh/id_as_ed25519 user@$4 sudo passwd -x 30 "$1" 1> /dev/null
+                        echo "$3 ha sido creado"
                     fi
                 fi
+		return 0
+
+} 
+anyadir_usuarios()
+{
+    while read -r ip
+    do
+        if ssh -n -i ~/.ssh/id_as_ed25519 user@$ip pwd 1>/dev/null 2>/dev/null
+        then
+            while IFS=, read -r identificador contrasenya nombrecompleto
+            do
+		anyadir_usuario $identificador $contrasenya "$nombrecompleto" $ip
             done < "$1"
         else
             echo "$ip no es accesible"
@@ -40,10 +46,10 @@ borrar_usuarios()
 {
     while read ip
     do
-        if -i ~/.ssh/id_as_ed25519 as@"$ip"
+        if ssh -n -i ~/.ssh/id_as_ed25519 user@"$ip" pwd 1>/dev/null 2>/dev/null 
         then
             #Creamos el directorio en el que se incluiran las copias de los directorios de los usuarios eliminados del sistema
-            ssh -i ~/.ssh/id_as_ed25519 as@"$ip" mkdir -p /extra/backup
+            ssh -n -i ~/.ssh/id_as_ed25519 user@"$ip" mkdir -p /extra/backup
             #Solo es necesario distinguir el identificador
             while IFS=, read -r identificador resto
             do
@@ -53,16 +59,15 @@ borrar_usuarios()
                     exit 2
                 fi
                 #Si el identificador es correcto, se procede a comprobar si es usuario del sistema, en cuyo caso sera eliminado del sistema
-                if [ ssh -i ~/.ssh/id_as_ed25519 as@"$ip" id -u "$identificador" 1>/dev/null 2>/dev/null ]
+                if  ssh -n -i ~/.ssh/id_as_ed25519 user@"$ip" id -u "$identificador" 1>/dev/null 2>/dev/null 	
                 then
                     #Impedimos el login al usuario que va a ser eliminado del sistema, para posteriormente realizar la copia de su directorio
                     #home y, en caso de haberse realizado esta copia satisfactoriamente, se elimina al usuario del sistema
-                    ssh -i ~/.ssh/id_as_ed25519 as@"$ip" usermod -L "$identificador"
-                    dir_home= $(ssh -i ~/.ssh/id_as_ed25519 as@"$ip" cat /etc/passwd | grep "$identificador" | cut -d ':' -f 5 )
-                    ssh -i ~/.ssh/id_as_ed25519 as@"$ip" tar -cf /extra/backup/"$identificador".tar -C "$dir_home" .
-                    if ssh -i ~/.ssh/id_as_ed25519 as@"$ip" test-r /extra/backup/"$dir_home"
+                    ssh -n -i ~/.ssh/id_as_ed25519 user@"$ip" sudo usermod -L "$identificador"
+                    dir_home=`ssh -n -i ~/.ssh/id_as_ed25519 user@"$ip" cat /etc/passwd | grep "$identificador" | cut -d ':' -f 6`
+                    if ssh -n -i ~/.ssh/id_as_ed25519 user@"$ip" sudo tar -cf /extra/backup/"$identificador".tar -C "$dir_home" .
                     then
-                        ssh -i ~/.ssh/id_as_ed25519 as@"$ip" userdel -r "$identificador"
+                        ssh -n -i ~/.ssh/id_as_ed25519 user@"$ip" sudo userdel -r "$identificador"
                     fi
                 fi
             done < "$1"
