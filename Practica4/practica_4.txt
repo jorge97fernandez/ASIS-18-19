@@ -1,12 +1,11 @@
-Autores: Jorge Fernández (721529) y Daniel Fraile (721525)
-Practica 4 de Administración de Sistemas
+﻿Autores: Jorge Fernández (721529) y Daniel Fraile (721525)
+Práctica 4 de Administración de Sistemas
 
-Para la configuración de las máquinas, una vez tenemos creadas las máquinas y tenemos el adaptador 
-de red de anfitrión conectado a estas máquinas pasamos a configurar las máquinas para que se conecten
+Para la configuración de las máquinas, una vez tenemos creadas las máquinas y el adaptador 
+de red de anfitrión pasamos a configurar las máquinas para que se conecten
 a este adaptador, para ello, lo primero es conocer el nombre con el que conocen las máquinas al 
-adaptador y para ello usamos el comando "ip addr" y buscamos aquella conexión que tenga como 
+adaptador. Para ello usamos el comando "ip addr" y buscamos aquella conexión que tenga como 
 inet la dirección IP del host del adaptador.
-
 Una vez conocido el nombre con el que reconocen al adaptador, procedemos a modificar el 
 fichero /etc/network/interfaces de las distintas máquinas.
 
@@ -15,16 +14,16 @@ auto enp0s8
 iface enp0s8 inet static
 address 192.168.56.2/192.168.56.3
 netmask 255.255.255.0
-broadcast 192.168.56.1
-network 192.168.56.1
+gateway 192.168.56.1
+network 192.168.56.0
+broadcast 192.168.56.255
 
 Una vez añadidas estas líneas en ambas máquinas, se prueba a realizar el comando ping entre 
 las distintas máquinas, con resultado satisfactorio.
 
 A continuación, procedemos a configurar los ssh en las máquinas, una vez instalados los paquetes 
 necesarios, editamos el fichero /etc/ssh/sshd_config de las máquinas, en este fichero descomentamos
-la línea de PermitRootLogin con valor no, también deberemos modificar en este fichero, la línea 
-PasswordAuthentication, también a valor no. Por último, para poder conectarse a una máquina sin 
+la línea de PermitRootLogin con valor no. Por último, para poder conectarse a una máquina sin 
 necesidad de introducir la contraseña, lo primero es generar un nuevo par de claves pública y privada 
 en el host, esto se realiza mediante el comando ssh-keygen, en nuestro caso, al pedirnos claves de 
 tipo ed25519, ejecutaremos el comando ssh-keygen -t ed25519, posteriormente se nos pedirá introducir 
@@ -32,7 +31,7 @@ la ruta donde queremos guardar estos ficheros, así como el nombre de éstos, en
 ~/.ssh/id_as_ed25519, y con esto el host tendrá ya generados su clave pública y privada. Por último, solo 
 faltaría que las otras dos máquinas conocieran cuál es la clave pública del host, para lo cual podemos 
 ejecutar el comando ssh-copy-id con la opción -i indicando la ruta del fichero, en nuestro caso ~/.ssh/id_as_ed25519.pub, 
-seguido del usuario y la máquina a la que lo queremos copiar, en este caso as@192.168.56.2/192.168.56.3.
+seguido del usuario y la máquina a la que lo queremos copiar, en este caso user@192.168.56.2/192.168.56.3.
 Tras esto, ambas máquinas conocerán la clave pública del host, tras lo cual lo único que faltará es probar 
 que se puede realizar el ssh sin necesidad de introducir contraseñas, para ello, ejecutaremos el comando 
 ssh con la opción -i indicando la ruta del fichero de clave privada, ~/.ssh/id_as_ed25519 seguido por el 
@@ -43,10 +42,9 @@ usuario y la máquina a la que nos queremos conectar.
 
 							debian-as1									debian-as2
 							192.168.56.2									192.168.56.3
-							080027CB90D4									0800279F8E3A
-									|										|
-									|										|
-									|										|
+							080027F94A00									0800271A3967
+								|										|
+								|										|
+								|										|
 									---	---	---	host:		---	---	---	---	-
-												192.168.56.4
-												080027F8C0CA
+												192.168.56.1
