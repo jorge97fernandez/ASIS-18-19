@@ -1,0 +1,47 @@
+Autores: Jorge Fernández (721529) y Daniel Fraile (721525)
+Practica 5 de Administración de Sistemas
+
+Parte 1:
+
+Para realizar este apartado y tras haber añadido el disco(sdb) a la máquina se han seguido los siguientes pasos:
+Creamos la tabla de partición para el nuevo disco:
+sudo parted /dev/sdb mklabel gpt
+Posteriormente, mediante el uso de parted indicamos que vamos a utilizar el disco /dev/sdb del que acabamos de crear
+la tabla de partición: select /dev/sdb
+Y creamos las dos particiones:
+mkpart primary 1Mib 16Mib
+mkpart primary 17Mib 31Mib
+Y comprobamos que se han creado ambas tablas haciendo uso de print.
+Creamos los volúmenes utilizando:
+sudo mkfs.ext3 /dev/sdb1
+sudo mkfs.ext4 /dev/sdb2
+Una vez creados los volúmenes procedemos a su montaje:
+sudo mount -t ext3 /dev/sdb1 /home/user/Part1
+sudo mount -t ext4 /dev/sdb2 /home/user/Part2
+Y para que el montaje se realize en el arranque, añadimos dos líneas a /etc/fstab:
+/dev/sdb1	/home/user/Part1	ext3	defaults	0	1
+/dev/sdb2	/home/user/Part2	ext4	defaults	0	1
+Y al rearrancar la máquina podemos probar con el comando mount sin ningun parámetro que nos aparecen ambos volúmenes montados
+en /home/user/Part1 y /home/user/Part2 respectivamente.
+
+
+Parte 3:
+
+Para realizar este apartado y tras haber añadido el disco(sdc) a la máquina se han seguido los siguientes pasos:
+Mediante el comando sudo fdisk /dev/sdc creamos una nueva partición de tipo Linux LVM que ocupe todo el disco y la escribimos.
+Creamos un volumen físico a partir de esta nueva partición: sudo pvcreate /dev/sdc1
+Creamos el grupo volumen con el volumen físico: sudo vgcreate vg_p5 /dev/sdc1
+
+
+Para comprobar el funcionamiento del primer script de este apartado hemos usado los comandos ‘sudo pvs -o+pv_used’,
+que muestra los volúmenes físicos y los grupos volumen a los que están asignados  así como información sobre el espacio
+y ‘sudo vgdisplay’ que muestra información detallada del grupo volumen.
+Ejecutando estos comandos antes y después del script hemos confirmado que las particiones se añaden al grupo volumen y
+que su capacidad se extiende.
+
+Para comprobar el funcionamiento del segundo script de este apartado hemos usado fundamentalmente los comandos lvscan para
+comprobar que el tamaño del volumen lógico cambiaba y sfdisk para comprobar que el del sistema de ficheros también lo hacía.
+Ejecutando estos comandos antes y después del script hemos confirmado que las particiones se añaden al grupo volumen y que
+su capacidad se extiende.
+Asimismo se han comprobado /etc/fstab y /etc/mtab y se ha reiniciado la máquina para comprobar que cuando se debía crear un
+nuevo volumen lógico éste se creaba y se montaba al inicio.
