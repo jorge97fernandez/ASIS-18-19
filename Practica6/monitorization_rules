@@ -1,0 +1,7 @@
+Usuarios y carga media de trabajo: [0-2] users;load average: 0,0[0-1], 0,0[0-2], 0,0[0-1]
+Memoria ocupada y libre: [0-1][0-9][0-9]M 0,[0-9]G
+Swap utilizado: [0-1]B
+Espacio ocupado y libre: [0-1],[0-9]G [0-4],[0-9]G
+Num. de puertos abiertos: [0-2][0-9]
+Num. de conexiones establecidas: [0-1][0-9][0-9]
+Num. de procesos en ejecución: [0-9][0-9]
