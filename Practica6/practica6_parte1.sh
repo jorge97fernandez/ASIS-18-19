@@ -15,3 +15,5 @@ echo -n "Num. de conexiones establecidas: "
 netstat |grep "CONNECTED" | wc -l
 echo -n "Num. de procesos en ejecución: "
 ps -N | grep [[:digit:]] | wc -l
+echo -n "%Disponible CPU: "
+sar 5 12 | tail -1 |sed 's/ \{1,\}/ /g' | cut -d ' ' -f 8
