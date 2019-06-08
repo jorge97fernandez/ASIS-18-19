@@ -1,7 +1,7 @@
 Jorge Fernandez  (721529) y Daniel Fraile (721525)
 Practica 6 de Administración de Sistemas.
 
-Una vez se ha realizado el script preciso para la objención de los datos, se debe configurar rsyslog, para realizar
+Una vez se ha realizado el script preciso para la obtención de los datos, se debe configurar rsyslog, para realizar
 un correcto envio de los mensajes. Para configurar rsyslog, comenzaremos por configurar la maquina en la cual guardaremos
 los datos de monitorización de ambas máquinas, en esta, debe de modificarse el fichero /etc/rsyslog.conf, en primer lugar,eliminando
 los comentarios que aparecen inicialmente en la zona de modulos, haciendo referencia a la recepcion de paquetes via tcp o udp, eliminamos los
@@ -9,21 +9,26 @@ comentarios correspondientes a las lineas module e input de ambos.
 
 Una vez realizada esta modificación, se debe añadir una nueva regla:
 local0.info 	/var/log/monitorizacion
-Esta regla indica que cuando lleguen mensajes con ese selector, los almacene en el ficher /var/log/monitorizacion.
+Esta regla indica que cuando lleguen mensajes con ese selector, los almacene en el fichero /var/log/monitorizacion.
 
 En el caso de la maquina que envia los mensajes a la otra maquina, habra que realizar un procedimiento similar, unicamente habra que añadir una nueva regla:
-local0.info	@192.168.56.2
+local0.info	@192.168.55.2
 
-Esta regla indica que si llega un mensaje con dicho selector, se lo reenvie a la maquina con direccion ip 192.168.56.2.
+Esta regla indica que si llega un mensaje con dicho selector, se lo reenvie a la maquina con direccion ip 192.168.55.2.
 
 Una vez realizadas las modificaciones en rsyslog.conf, podremos hacer uso del comando logger con la opcion -p local0.info.
 
 Posteriormente, para configurar cron para que se realize este envio de datos cada minuto, hay que configurar el fichero /etc/crontab, en el que
 hay que añadir una nueva linea:
-* *		* * * as /home/as/...
-Esta linea indica que cada minuto se ejecute con el usuario as, el comando que se indica a continuación, en este caso, los campos relacionados con los
+* *		* * * user /home/user/.../practica6_parte1.sh | logger -p local0.info &>/dev/null
+Esta linea indica que cada minuto se ejecute con el usuario user, el comando que se indica a continuación, en este caso, los campos relacionados con los
 minutos, horas, dias... no hay que rellenarlos con ningun número, puesto que vamos a realizarlo cada minuto.
+Además, para poder acceder al porcentaje de CPU disponible, se debe utilizar el paquete sysstat. Para poder utilizarlo, se debe
+activar la recolección de datos, en /etc/default/sysstat, poniendo el campo ENABLE a true, y ademas se puede modificar el cron
+para que el intervalo de coleccion de datos sea cada minuto(/etc/cron.d/sysstat).
+
 
 En lo referente al uso de logckeck, primero se debera instalar con apt-get ...  en caso de no estar instalado en la máquina, posteriormente, hay que
 añadir en el fichero /etc/logcheck/logcheck.logfiles el nuevo fichero que queremos comprobar, en este caso, /var/log/monitorizacion, y, por último, creamos el fichero
 de reglas a comprobar, en la ruta /etc/logcheck/ignore.d.server/monitorization_rules, para comprobar los valores del fichero de log.
+Para que las comprobaciones con el log se realizen a la par que se reciben los datos, es preciso cambiar el tiempo cada cual se hace la comprobacion en /etc/cron.d/logcheck, en este caso se ha decidido poner la comprobación a cada minuto.
