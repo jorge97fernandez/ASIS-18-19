@@ -5,3 +5,4 @@ Espacio ocupado y libre: [0-1],[0-9]G [0-4],[0-9]G
 Num. de puertos abiertos: [0-2][0-9]
 Num. de conexiones establecidas: [0-1][0-9][0-9]
 Num. de procesos en ejecución: [0-9][0-9]
+%Disponible CPU: 99,9[0-9]
