@@ -1,0 +1,183 @@
+Jorge Fernández(721529) y Daniel Fraile(721525)
+Trabajo de Administración de Sistemas
+
+En este trabajo, se va a hacer uso de 6 maquinas virtuales debian(con nombres
+debian1 a debian6) en las cuales se va a proceder a configurar una subred 
+en la cual se va a incluir un servidor web y un servidor ssh cada uno en una
+máquina de la subred, y una de las subredes internas va a estar configurada 
+dinámicamente mediante un servidor DHCP instalado en debian1, además se va a
+configurar el router debian1 para permitir cualquier tráfico generado en la
+intranet, así como el trafico generado desde el host cuyo objetivo sea el 
+servidor web y el servidor SSH, esta configuración se va a realizar mediante
+iptables.
+
+Para comenzar, se va a configurar el router debian1, el cual inicialmente
+tendrá dos cables de red conectados, un cable NAT para poder tener acceso
+a Internet y por lo tanto permitir la actualización y descarga de paquetes,...
+y otro cable va a ser un cable Host-Only conectado con el host, la red Host-only
+va a tener asignadas el rango de IPs 192.168.57.0/24, de las cuales la dirección
+192.168.57.1 va a ser asignada al host, por lo que a la maquina debian1 vamos a
+asignarle la dirección IP 192.168.57.2, para ello lo primero es conocer cual es
+el cable asignado a esta red, para ello ejecutamos el comando ip-addr, y nos
+aparecerá un ultimo cable el cual no tendrá asignada ninguna ip, ese será el
+cable correspondiente, ya que no hemos añadido ningún cable mas. Una vez
+conocido cual es el cable a modificar, procedemos a realizar la modificación del
+fichero /etc/network/interfaces con las siguientes lineas:
+
+auto <nombre del cable asignado, en este caso enp0s8>
+iface <enp0s8> inet static
+	address 192.168.57.2
+	netmask 255.255.255.0
+	network 192.168.57.0
+	broadcast 192.168.57.255
+
+Una vez modificado guardamos el fichero(se debe modificar como superusuario), y
+reiniciamos el servicio de network, con el comando sudo service networking 
+restart. Una vez hecho este reinicio, al volver a ejecutar el comando ip addr 
+nos aparecerá la nueva dirección IP que acabamos de añadir donde anteriormente
+no había. Además, si ejecutamos ip route, veremos que tenemos una linea tal que
+192.168.57.0/24 dev enp0s8 .... src 192.168.57.2, una vez comprobado esto, ya
+es posible realizar ping entre ambas maquinas, host y debian1, respondiendo 
+ambas correctamente.
+
+A continuación, vamos a proceder a configurar la primera red interna, la Red
+Interna 1, para ello vamos a añadir un nuevo cable a debian1, y vamos a incluir
+el único cable que va a tener debian2, una vez conectado el cable, podemos
+realizar la comprobación con ip addr que nos ha aparecido un nuevo cable sin ip
+asignada y proceder a modificar el fichero /etc/network/interfaces, en este caso
+se va a usar la subred 192.168.58.0/24(siendo 192.168.58.1 debian1 y 
+192.168.58.2 debian2), procedemos a configurar el fichero con estas nuevas ips.
+En este caso en la maquina debian2, además de los 4 campos que se han indicado
+antes, vamos a indicar también cual va a ser la puerta de enlace por defecto,y
+añadimos la linea:
+	gateway 192.168.58.1
+Una vez modificados ambos ficheros, procedemos a guardarlos y reiniciar el
+servicio como se ha indicado anteriormente, y comprobamos posteriormente que
+las IPs se han asignado correctamente, también probamos a realizar pings entre
+ambas máquinas para ver que funcionan correctamente. En este momento aún no 
+será posible realizar un ping entre debian2 y el host, ni hacia internet, estos
+aspectos los resolveremos al finalizar.
+
+Una vez que tenemos la Red interna 1 configurada, procedemos a configurar la Red
+interna 2, en ella se hace uso de DHCP, por lo que lo primero sera instalar en 
+debian1 un servidor DHCP, para ello, en debian1, ejecutamos sudo apt-get install
+isc-dhcp-server y procedemos a configurar las direcciones IP que va a poder
+asignar, para ello, primero en /etc/default/isc-dhcp-server, en la línea
+INTERFACESv4="", añadimos el cable correspondiente a la nueva subred, que debemos
+haber conectado previamente y, añadimos en /etc/dhcp/dhcpd.conf las siguientes
+lineas:
+subnet 192.168.59.0 netmask 255.255.255.0{
+	range 192.168.59.2 192.168.59.100;
+	option-broadcast address 192.168.59.255;
+	option routers 192.168.59.1;
+}
+Ademas de ello, configuramos /etc/network/interfaces para esta nueva red interna
+en este caso asignando a debian1 la ip 192.168.59.1. Ahora debemos configurar
+las dos maquinas que van a obtener sus ips mediante dhcp(debian3 y debian4), en
+ambas modificamos /etc/network/interfaces y añadimos las siguientes lineas:
+allow-hotplug <cable asignado,enp0s3 en este caso>
+iface enp0s3 inet dhcp
+Y guardamos el fichero y reiniciamos el servicio, y realizamos pruebas mediante
+ping para comprobar la correcta configuración. Esta subred tiene una máquina
+más, debian6, la cual es configurada sobre la misma subred(192.168.59.0/24) pero
+se encuentra configurada manualmente.Esta máquina nos va a servir de puente sobre
+la red interna 3 que vamos a añadir posteriormente, es por ello que tendrá otro
+cable añadido para conectar con esta red interna 3, en esta red 3 tendrá asignada
+la IP 192.168.60.1, y, además, para poder ejercer de puente entre ambas redes,debe
+poder realizar reenvío de paquetes, por lo que modificaremos, al igual que debemos
+hacer en debian1, /etc/sysctl.conf, y descomentaremos la siguiente linea:
+net.ipv4.ip_forward=1. Una vez finalizada esta configuración, solo faltara por
+configurar la otra máquina perteneciente a la red interna 3, debian5, que tendrá
+asignada como IP 192.168.60.2, y tendrá como gateway 192.168.60.1.
+
+Una vez realizadas estas configuraciones, tenemos todo el mapa de red
+configurado, a falta de instalar los servicios que va a ofrecer la subred, y de
+configurar el tráfico de paquetes que se va a permitir.
+
+Para configurar el tráfico, lo primero que hay que hacer es lo que se ha indicado
+anteriormente, disponer en las maquinas debian1 y debian5 de ip forwarding en ipv4.
+Como bien se ha explicado, la red interna 3 es accesible mediante la red interna
+2, por lo que es inaccesible a priori desde el router debian1. Es por ello que
+vamos a añadir una linea en /etc/network/interfaces de debian1 como la
+siguiente:
+post-up ip route add 192.168.60.0/24 via 192.168.59.4 dev enp0s10
+Con esta línea indicamos a debian1 que los paquetes cuyo destino sea de la red
+interna 3 deben ser reenviados a debian5 por la red interna2, y ella será la que
+se encargue de enviarlo hacia la red interna 3, ya que ejerce de puente entre ambas
+redes. 
+
+Para realizar la configuración del tráfico mediante iptables, vamos a ir creando
+las diferentes reglas que van a ser utilizadas:
+Para comenzar reiniciamos todas las tablas, dejando únicamente las tablas por
+defecto:
+	iptables -F
+	iptables -X
+	iptables -Z
+	iptables -t nat -F
+
+Posteriormente, inicializamos el tratamiento por defecto de los paquetes que sean
+recibidos:
+	iptables -P INPUT DROP
+	iptables -P FORWARD DROP
+	iptables -P OUTPUT ACCEPT
+Por defecto, no se aceptan paquetes provenientes de otras máquinas, solo se permite
+la salida de paquetes de la propia máquina.
+
+A continuación, aceptamos todos los paquetes procedentes de cualquier máquina
+de la Intranet:
+	iptables -A INPUT -i enp0s9 -p all -j ACCEPT
+	iptables -A FORWARD -i enp0s9 -p all -j ACCEPT
+	iptables -A INPUT -i enp0s10 -p all -j ACCEPT
+	iptables -A FORWARD -i enp0s10 -p all -j ACCEPT
+
+Posteriormente, aceptamos paquetes provenientes de cualquier máquina, siempre y
+cuando esos paquetes vengan precedidos de una conexión previa ya establecida, vease
+respuestas a pings,...
+	iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+	iptables -A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+	iptables -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+También, deberemos proporcionar una ip pública a aquellos paquetes que tengan como
+destino la Extranet, con el fin de que exista respuesta:
+	iptables -t nat -A POSTROUTING -o enp0s3 -j MASQUERADE
+	iptables -t nat -A POSTROUTING -o enp0s8 -j MASQUERADE
+
+Una vez realizadas estas configuraciones en las iptables y puestas en 
+funcionamiento, añadiendo en /etc/network/interfaces de debian1 la linea
+post-up <ruta al fichero de iptables>, todas las máquinas de la intranet tienen
+acceso a internet mediante debian1, esto puede ser comprobado por ejemplo
+mediante la ejecución de un traceroute a internet o al host, para observar que
+las maquinas por las que pasa el paquete son las correctas, así como también
+podemos comprobar que el host no puede realizar ping a ningún de nuestras direcciones
+privadas, unicamente puede comunicarse con debian1 en su interfaz publica para el
+192.168.57.2. Dado que las maquinas tienen ya acceso a internet, se va a proceder
+a instalar los servidores que va a ofrecer la subred, el servidor web nginx
+en debian2 y el servidor ssh en debian5. Para instalar el servidor web, basta
+con ejecutar en debian2 el comando sudo apt-get install nginx. y posteriormente
+mediante la ejecución del comando curl 192.168.58.2 en cualquier máquina, debería
+respondernos con el html básico de nginx. En cuanto al servicio ssh en debian5,
+ejecutamos apt-get install openssh-server, y en su fichero de configuración
+en /etc/ssh/sshd_config modificamos la linea PermitRootLogin=no para evitar que
+se pueda hacer ssh a la cuenta de root, y para comprobar que el servicio está instalado
+correctamente probamos a realizar un ssh user@192.168.60.2 en cualquier máquina
+de la subred, introducimos la contraseña y veremos como efectivamente podemos 
+acceder a la maquina.
+
+Por último, debemos permitir el acceso de la maquina host, a ambos servicios
+que acabamos de configurar, para ello añadiremos reglas iptables al fichero que 
+hemos configurado previamente.
+Para darle acceso al servicio ssh:
+	iptables -t nat -A PREROUTING -i enp0s8 -p tcp --dport 22 -j DNAT --to 192.168.60.2:22
+	iptables -A FORWARD -p tcp --dport 22 -j ACCEPT
+Para comprobar que el host puede correctamente acceder a este ssh ejecutamos 
+en la maquina host en comando ssh user@192.168.57.2 y tras introducir la contraseña
+podemos ejecutar el comando ip addr para observar que estamos en la maquina 192.168.60.2
+
+Por último, vamos a permitir el trafico hacia el servidor web:
+	iptables -t nat -A PREROUTING -i enp0s8 -p tcp --dport 80 -j DNAT --to 192.168.58.2:80
+	iptables -t nat -A PREROUTING -i enp0s8 -p tcp --dport 443 -j DNAT --to 192.168.58.2:443
+	iptables -A FORWARD -p tcp --dport 80 -j ACCEPT
+	iptables -A FORWARD -p tcp --dport 443 -j ACCEPT
+Para comprobarlo, podemos acceder desde cualquier navegador a 192.168.57.2 y nos
+deberá aparecer la pagina de inicio del servidor nginx. Y con esto tendremos
+la subred y sus distintos servicios configurados completamente.
